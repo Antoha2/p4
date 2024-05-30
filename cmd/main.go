@@ -31,25 +31,25 @@ func run() {
 	}
 
 	//select id, name from Employees  where id = 1
-	err = selectWhere(dbx)
+	err = SelectData(dbx)
 	if err != nil {
 		log.Println(err)
 	}
 
 	//INSERT into Departments (dep_name) values('АХЧ')
-	err = insertData(dbx)
+	err = InsertData(dbx)
 	if err != nil {
 		log.Println(err)
 	}
 
 	// update Employees set name='Robert' where name='Rob'
-	err = updateData(dbx)
+	err = UpdateData(dbx)
 	if err != nil {
 		log.Println(err)
 	}
 
 	// update Employees set name='Robert' where name='Rob'
-	err = transaction(dbx)
+	err = Transaction(dbx)
 	if err != nil {
 		log.Println(err)
 	}
@@ -60,20 +60,19 @@ func run() {
 	<-quit
 }
 
-func selectWhere(dbx *gorm.DB) error {
+func SelectData(dbx *gorm.DB) error {
 
-	emp := &helper.Employee{}
-	query := "select id, name from Employees  where id = $1"
-	result := dbx.Table("Employees").Raw(query, 1).Scan(emp)
+	query := "select id, name from Employees where id = $1"
+	result := dbx.Table("Employees").Raw(query, 1)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return errors.New("record not found")
 	}
-	log.Println("select id, name from Employees where id = 1 - ok")
+	log.Println("select ok")
 
 	return nil
 }
 
-func insertData(dbx *gorm.DB) error {
+func InsertData(dbx *gorm.DB) error {
 
 	dep := &helper.Departament{DepName: "АХЧ"}
 
@@ -81,22 +80,22 @@ func insertData(dbx *gorm.DB) error {
 	if errors.Is(result.Error, gorm.ErrInvalidValue) {
 		return errors.New("invalid value")
 	}
-	log.Println("INSERT into Departments (dep_name) values('АХЧ') - ok")
+	log.Println("INSERT ok")
 	return nil
 
 }
 
-func updateData(dbx *gorm.DB) error {
+func UpdateData(dbx *gorm.DB) error {
 
 	result := dbx.Table("employees").Model(helper.Employee{}).Where("name=?", "Rob").Updates(helper.Employee{Name: "Robert"})
 	if errors.Is(result.Error, gorm.ErrInvalidData) {
 		return errors.New("unsupported data")
 	}
-	log.Println("update Employees set name='Robert' where name='Rob' ok")
+	log.Println("update ok")
 	return nil
 }
 
-func transaction(dbx *gorm.DB) error {
+func Transaction(dbx *gorm.DB) error {
 
 	tx := dbx.Begin()
 	defer func() {
@@ -119,7 +118,7 @@ func transaction(dbx *gorm.DB) error {
 		return err
 	}
 
-	log.Println("Используйте транзакции для вставки нового отдела и сотрудника - ok")
+	log.Println("transaction ok")
 	return tx.Commit().Error
 }
 
@@ -137,13 +136,13 @@ func initDb(cfg *config.Config) (*gorm.DB, error) {
 
 	connConfig, err := pgx.ParseConfig(connString)
 	if err != nil {
-		return nil, fmt.Errorf("1 failed to parse config: %v", err)
+		return nil, fmt.Errorf("failed to parse config: %v", err)
 	}
 
 	// Make connections
 	dbx, err := sqlx.Open("pgx", stdlib.RegisterConnConfig(connConfig))
 	if err != nil {
-		return nil, fmt.Errorf("2 failed to create connection db: %v", err)
+		return nil, fmt.Errorf("failed to create connection db: %v", err)
 	}
 
 	dbx.SetMaxIdleConns(10)
