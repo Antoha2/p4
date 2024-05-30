@@ -1,0 +1,62 @@
+version: '3.2'
+services:
+
+  tlgrmBot1:
+    container_name: p4
+    image: golang:1.21.4
+      
+    depends_on:
+       - postgres   
+       - migrate
+    environment:
+        HOST_ADDR: :8180      
+    volumes:
+      - ./:/app/
+    working_dir: /app
+    expose:
+      - 8180
+    ports:
+      - '8180:8180'
+    command: >
+     bash -c "go run  ./cmd/main.go"
+   
+
+
+  postgres:
+    container_name: postgres
+    image: postgres:16.1-alpine3.19
+    restart: always
+    environment:      
+      POSTGRES_DB: postgres
+      POSTGRES_USER: user 
+      POSTGRES_PASSWORD: password    
+    ports:
+      - '5432:5432'
+    volumes:
+        - ./postgres:/var/lib/postgresql
+    healthcheck:
+      test: pg_isready -U user -d postgres
+      interval: 10s
+      retries: 5
+      start_period: 5s
+      timeout: 60s
+
+
+  migrate:
+    container_name: migrate
+    image: migrate/migrate:v4.17.0
+    volumes:
+      - ./migrations:/migrations
+    entrypoint:
+      [
+        "migrate",
+        "-path",
+        "/migrations",
+        "-database",
+        "postgres://user:password@postgres:5432/postgres?sslmode=disable",
+        "up"
+      ]
+    depends_on:
+       - postgres
+
+  

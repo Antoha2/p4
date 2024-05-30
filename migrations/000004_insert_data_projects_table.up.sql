@@ -1,0 +1,1 @@
+INSERT into Projects (project_name) values('google'),('yandex'),('amazon')
