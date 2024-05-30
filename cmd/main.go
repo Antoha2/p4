@@ -9,6 +9,7 @@ import (
 	"p4/internal/config"
 	"p4/internal/helper"
 	"syscall"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/stdlib"
@@ -33,28 +34,24 @@ func run() {
 	err = selectWhere(dbx)
 	if err != nil {
 		log.Println(err)
-		os.Exit(1)
 	}
 
 	//INSERT into Departments (dep_name) values('АХЧ')
 	err = insertData(dbx)
 	if err != nil {
 		log.Println(err)
-		os.Exit(1)
 	}
 
 	// update Employees set name='Robert' where name='Rob'
 	err = updateData(dbx)
 	if err != nil {
 		log.Println(err)
-		os.Exit(1)
 	}
 
 	// update Employees set name='Robert' where name='Rob'
 	err = transaction(dbx)
 	if err != nil {
 		log.Println(err)
-		os.Exit(1)
 	}
 
 	quit := make(chan os.Signal, 1)
@@ -128,13 +125,14 @@ func transaction(dbx *gorm.DB) error {
 
 func initDb(cfg *config.Config) (*gorm.DB, error) {
 
-	connString := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+	connString := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s&connect_timeout=%d",
 		cfg.DB.User,
 		cfg.DB.Password,
 		cfg.DB.Host,
 		cfg.DB.Port,
 		cfg.DB.Dbname,
 		cfg.DB.Sslmode,
+		5,
 	)
 
 	connConfig, err := pgx.ParseConfig(connString)
@@ -147,6 +145,10 @@ func initDb(cfg *config.Config) (*gorm.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("2 failed to create connection db: %v", err)
 	}
+
+	dbx.SetMaxIdleConns(10)
+	dbx.SetMaxOpenConns(100)
+	dbx.SetConnMaxLifetime(time.Hour)
 
 	gormDB, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: dbx,
