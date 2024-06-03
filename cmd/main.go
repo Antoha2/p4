@@ -48,7 +48,8 @@ func run() {
 		log.Println(err)
 	}
 
-	// update Employees set name='Robert' where name='Rob'
+	//transaction - insert into Employees (name, DepartamentId, ProjectId) values('Pol', 1, 2) and
+	// insert into Departments (dep_name) values('Logistic')
 	err = Transaction(dbx)
 	if err != nil {
 		log.Println(err)
@@ -56,10 +57,10 @@ func run() {
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
-
 	<-quit
 }
 
+// SELECT id, name from Employees  where id = 1
 func SelectData(dbx *gorm.DB) error {
 
 	query := "select id, name from Employees where id = $1"
@@ -67,11 +68,12 @@ func SelectData(dbx *gorm.DB) error {
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return errors.New("record not found")
 	}
-	log.Println("select ok")
+	log.Println("SELECT ok")
 
 	return nil
 }
 
+// INSERT into Departments (dep_name) values('АХЧ')
 func InsertData(dbx *gorm.DB) error {
 
 	dep := &helper.Departament{DepName: "АХЧ"}
@@ -85,16 +87,19 @@ func InsertData(dbx *gorm.DB) error {
 
 }
 
+// UPDATE Employees set name='Robert' where name='Rob'
 func UpdateData(dbx *gorm.DB) error {
 
 	result := dbx.Table("employees").Model(helper.Employee{}).Where("name=?", "Rob").Updates(helper.Employee{Name: "Robert"})
 	if errors.Is(result.Error, gorm.ErrInvalidData) {
 		return errors.New("unsupported data")
 	}
-	log.Println("update ok")
+	log.Println("UPDATE ok")
 	return nil
 }
 
+// transaction - insert into Employees (name, DepartamentId, ProjectId) values('Pol', 1, 2) and
+// insert into Departments (dep_name) values('Logistic')
 func Transaction(dbx *gorm.DB) error {
 
 	tx := dbx.Begin()
@@ -118,7 +123,7 @@ func Transaction(dbx *gorm.DB) error {
 		return err
 	}
 
-	log.Println("transaction ok")
+	log.Println("TRANSACTION ok")
 	return tx.Commit().Error
 }
 
@@ -153,12 +158,12 @@ func initDb(cfg *config.Config) (*gorm.DB, error) {
 		Conn: dbx,
 	}), &gorm.Config{})
 	if err != nil {
-		return nil, fmt.Errorf("3 gorm.Open(): %v", err)
+		return nil, fmt.Errorf("gorm.Open(): %v", err)
 	}
 
 	err = dbx.Ping()
 	if err != nil {
-		return nil, fmt.Errorf("4 error to ping connection pool: %v", err)
+		return nil, fmt.Errorf("error to ping connection pool: %v", err)
 	}
 	log.Printf("Подключение к базе данных на http://127.0.0.1:%d\n", cfg.DB.Port)
 	return gormDB, nil

@@ -1,1 +1,1 @@
-INSERT into Departments (dep_name) values('IT'),('PR'),('HR')
+INSERT into departaments (dep_name) values('IT'),('PR'),('HR')
